@@ -6,12 +6,17 @@ config_path = "config"
 binary_path = "Option"
 files_path = "Option"
 
-# [language_config]
-[language_config.css]
+[package.node]
+name = "node"
+
+[package.npm]
+name = "npm"
+
+[package.css]
 name = "css"
 path = "coucou"
-require = ["php", "css"]
+require = ["npm", "node"]
 
-[language_config.php]
+[package.php]
 name = "css"
 path = "coucou"

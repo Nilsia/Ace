@@ -9,7 +9,7 @@ pub const CONFIG_FILENAME: &str = "config.toml";
 pub struct Config {
     pub editor: Editor,
     // pub languages: Vec<String>,
-    pub language_config: HashMap<String, Language>,
+    pub package: HashMap<String, Language>,
 }
 
 impl Config {
@@ -18,9 +18,13 @@ impl Config {
     }
     pub fn remove(&mut self, args: &EditorArg) -> Result<()> {
         self.editor.remove(args)?;
-        for language in self.language_config.values_mut() {
+        for language in self.package.values_mut() {
             language.remove(args)?;
         }
         Ok(())
+    }
+
+    pub(crate) fn install(&self, args: &EditorArg) -> Result<()> {
+        self.editor.install(args)
     }
 }
