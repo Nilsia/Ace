@@ -1,33 +1,34 @@
+use crate::config::DEFAULT_FILENAME;
 use clap::{Parser, ValueEnum};
 
-use crate::config::CONFIG_FILENAME;
-
-#[derive(ValueEnum, Clone)]
+#[derive(ValueEnum, Clone, Debug)]
 pub enum Action {
-    Remove,
     Install,
+    Remove,
     Update,
 }
 
-#[derive(Parser)]
-pub struct EditorArg {
-    /// the action choices: remove, install, update
+#[derive(Parser, Debug)]
+pub struct Args {
     #[arg(value_enum)]
     pub action: Action,
 
-    #[arg(short, long, default_value_t =String::from(CONFIG_FILENAME))]
+    #[arg(short, long, default_value_t = String::from(DEFAULT_FILENAME))]
     pub config: String,
 
+    /// Modify only those packages
+    #[arg(short, long)]
+    pub packages: Option<Vec<String>>,
+
+    /// Temporary install with symbolic names
     #[arg(short, long, default_value_t = false)]
     pub symbolic: bool,
 
-    #[arg(short, long)]
-    pub languages: Option<Vec<String>>,
-
+    /// Force action
     #[arg(short, long, default_value_t = false)]
     pub force: bool,
 
-    /// verbose mode
+    /// Verbose mode
     #[arg(short, long, default_value_t = false)]
     pub verbose: bool,
 }

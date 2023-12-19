@@ -1,9 +1,18 @@
 use clap::Parser;
-use editor::{args::EditorArg, config::Config};
+use editor::args::Action;
+use editor::args::Args;
+use editor::config::Config;
 
 fn main() -> anyhow::Result<()> {
-    let args = EditorArg::parse();
-    let config: Config = Config::from_file(args.config)?;
+    let args = Args::parse();
+    let mut config = Config::from_file(&args.config)?;
+
+    println!("{:#?}", args);
     println!("{:#?}", config);
-    Ok(())
+
+    match args.action {
+        Action::Install => todo!(),
+        Action::Remove => todo!(),
+        Action::Update => todo!(),
+    }
 }
