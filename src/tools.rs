@@ -1,4 +1,4 @@
-use crate::args::Args;
+use crate::{args::Args, package::Package};
 use anyhow::Result;
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -6,31 +6,30 @@ use std::path::PathBuf;
 #[derive(Deserialize, Debug)]
 pub struct Tools {
     pub name: String,
-    pub binary: PathBuf,
+    pub bin: PathBuf,
     pub config: Option<PathBuf>,
     pub lib: Option<PathBuf>,
     pub requires: Option<Vec<String>>,
 }
 
-impl Tools {
-    pub fn try_install(&self, args: &Args) -> Result<()> {
-        todo!()
+impl Package for Tools {
+    fn name(&self) -> &String {
+        &self.name
     }
 
-    pub fn install_config(&self, args: &Args) -> Result<()> {
-        todo!()
+    fn bin(&self) -> &PathBuf {
+        &self.bin
     }
 
-    pub fn install_requirements(&self, args: &Args) -> Result<()> {
-        // Il faudra sans doute prendre la config en paramètre
-        todo!()
+    fn config(&self) -> Option<&PathBuf> {
+        self.config.as_ref()
     }
 
-    pub fn remove(&self, args: &Args) -> Result<()> {
-        todo!()
+    fn lib(&self) -> Option<&PathBuf> {
+        self.lib.as_ref()
     }
 
-    pub fn remove_config(&self, args: &Args) -> Result<()> {
+    fn install_requirements(&self, args: &Args) -> Result<()> {
         todo!()
     }
 }

@@ -5,7 +5,7 @@ use editor::config::Config;
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    let mut config = Config::from_file(&args.config)?;
+    let config = Config::from_file(&args.config)?;
 
     println!("{:#?}", args);
     println!("{:#?}", config);
