@@ -63,7 +63,7 @@ impl Config {
         if self
             .tools
             .as_ref()
-            .is_some_and(|v| vec_includes(v.keys(), self.get_all_required_package()))
+            .is_some_and(|v| !vec_includes(v.keys(), self.get_all_required_package()))
         {
             return Err(anyhow!("All required tools are not present"));
         }

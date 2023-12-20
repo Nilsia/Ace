@@ -157,14 +157,16 @@ pub trait Package {
             let mut choice = String::new();
 
             let display = path.display();
+            io::stdout().write_all(SAVE.as_bytes())?;
             print!(
-                "{SAVE}{YELLOW}WARNING{NC}: Do you want to remove '{}' (Y/n): ",
+                "{YELLOW}WARNING{NC}: Do you want to remove '{}' (Y/n): ",
                 display
             );
             io::stdout().flush()?;
             io::stdin().read_line(&mut choice)?;
+            io::stdout().write_all(RESTORE.as_bytes())?;
 
-            println!("{RESTORE}");
+            io::stdout().flush()?;
             match choice.trim().to_lowercase().as_str() {
                 "n" => {
                     println!("WARNING: Canceled '{}' deletion", display);
