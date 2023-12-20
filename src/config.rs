@@ -18,11 +18,15 @@ pub struct Config {
 
 impl Config {
     pub fn from_file<P: AsRef<Path>>(filename: P) -> Result<Config> {
-        let config: Config = toml::from_str(&std::fs::read_to_string(filename)?)?;
-        if let Err(e) = config.is_valid() {
-            Err(e)
+        if filename.as_ref().exists() {
+            let config: Config = toml::from_str(&std::fs::read_to_string(filename)?)?;
+            if let Err(e) = config.is_valid() {
+                Err(e)
+            } else {
+                Ok(config)
+            }
         } else {
-            Ok(config)
+            Err(anyhow!("No config file"))
         }
     }
 

@@ -1,6 +1,6 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub const SAVE: &str = "\x1b[s";
 pub const RESTORE: &str = "\x1b[2K\x1b[u";
@@ -21,6 +21,10 @@ pub fn get_config_dir() -> PathBuf {
 
 pub fn get_bin_dir() -> PathBuf {
     dirs::executable_dir().unwrap_or(PathBuf::from("~/.local/bin/"))
+}
+
+pub fn get_data_dir() -> PathBuf {
+    dirs::data_dir().unwrap_or(PathBuf::from("~/.local/share/"))
 }
 
 pub fn create_dirs() -> Result<()> {
@@ -61,9 +65,6 @@ pub fn export_bin_dir() -> Result<()> {
     Ok(())
 }
 
-pub fn clear_line() -> Result<()> {
-    Ok(std::io::stdout().write_all(b"\x1b[u")?)
-}
 pub fn vec_includes<P, V, U>(owner: V, includer: U) -> bool
 where
     P: PartialEq,
@@ -72,4 +73,44 @@ where
 {
     let owner_vec = owner.into_iter().collect::<Vec<P>>();
     includer.into_iter().all(|v| owner_vec.contains(&v))
+}
+
+pub fn make_absolute<P: AsRef<Path>>(path: P) -> Result<PathBuf> {
+    let path = path.as_ref();
+    if path.is_absolute() {
+        Ok(path.to_path_buf())
+    } else {
+        Ok(std::env::current_dir()?.join(path))
+    }
+}
+
+pub fn find_common_ancestor<P: AsRef<Path>>(one: P, two: P) -> Result<PathBuf> {
+    let mut result = PathBuf::new();
+    let one = make_absolute(one)?;
+    let two = make_absolute(two)?;
+
+    for (o, t) in one.components().zip(two.components()) {
+        if o == t {
+            result.push(o);
+        } else {
+            break;
+        }
+    }
+
+    if result.exists() {
+        Ok(result)
+    } else {
+        Err(anyhow!(
+            "{RED}ERROR{NC}: No common ancestor for '{}' and '{}'",
+            one.display(),
+            two.display()
+        ))
+    }
+}
+
+pub fn find_relative_path<P: AsRef<Path>>(from: P, to: P) -> Result<PathBuf> {
+    let from = make_absolute(from)?;
+    let to = make_absolute(to)?;
+
+    Ok(from.strip_prefix(to)?.to_path_buf())
 }

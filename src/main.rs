@@ -2,17 +2,25 @@ use clap::Parser;
 use editor::args::Action;
 use editor::args::Args;
 use editor::config::Config;
+use editor::utils::{NC, RED};
 
-fn main() -> anyhow::Result<()> {
+fn main() {
     let args = Args::parse();
-    let config = Config::from_file(&args.config)?;
+    match Config::from_file(&args.config) {
+        Ok(config) => {
+            println!("{args:#?}");
+            println!("{config:#?}");
 
-    println!("{:#?}", args);
-    println!("{:#?}", config);
+            let res = match args.action {
+                Action::Install => config.install(&args),
+                Action::Remove => config.remove(&args),
+                Action::Update => todo!(),
+            };
 
-    match args.action {
-        Action::Install => config.install(&args),
-        Action::Remove => config.remove(&args),
-        Action::Update => todo!(),
+            if let Err(e) = res {
+                eprintln!("{RED}ERROR{NC}: {e}");
+            }
+        }
+        Err(e) => eprintln!("{RED}ERROR{NC}: {e}"),
     }
 }

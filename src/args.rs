@@ -8,7 +8,7 @@ pub enum Action {
     Update,
 }
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Clone, Debug)]
 pub struct Args {
     #[arg(value_enum)]
     pub action: Action,
