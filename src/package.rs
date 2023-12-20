@@ -82,9 +82,6 @@ pub trait Package {
         }
     }
 
-    // TODO: We will probably need the config as parameter
-    fn install_requirements(&self, args: &Args) -> Result<()>;
-
     fn remove(&self, args: &Args) -> Result<()> {
         self.remove_bin(args)?;
         self.remove_config(args)

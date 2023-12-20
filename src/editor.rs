@@ -1,6 +1,4 @@
-use crate::args::Args;
 use crate::package::Package;
-use anyhow::Result;
 use serde::Deserialize;
 use std::path::PathBuf;
 
@@ -27,9 +25,5 @@ impl Package for Editor {
 
     fn lib(&self) -> Option<&PathBuf> {
         self.lib.as_ref()
-    }
-
-    fn install_requirements(&self, args: &Args) -> Result<()> {
-        todo!()
     }
 }
