@@ -2,11 +2,10 @@ use crate::args::Args;
 use crate::editor::Editor;
 use crate::package::Package;
 use crate::tools::Tools;
-use crate::utils::export_bin_dir;
+use crate::utils::{create_dirs, export_bin_dir};
 use anyhow::Result;
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::fs;
 use std::path::Path;
 
 pub const DEFAULT_FILENAME: &str = "config.toml";
@@ -19,7 +18,7 @@ pub struct Config {
 
 impl Config {
     pub fn from_file<P: AsRef<Path>>(filename: P) -> Result<Config> {
-        let config: Config = toml::from_str(&fs::read_to_string(filename)?)?;
+        let config: Config = toml::from_str(&std::fs::read_to_string(filename)?)?;
         if let Err(e) = config.is_valid() {
             Err(e)
         } else {
@@ -28,13 +27,15 @@ impl Config {
     }
 
     pub fn install(&self, args: &Args) -> Result<()> {
+        create_dirs()?;
+        export_bin_dir()?;
+
         self.editor.install(args)?;
         if let Some(packages) = &self.tools {
             for package in packages.values() {
                 package.install(args)?;
             }
         }
-        export_bin_dir()?;
         Ok(())
     }
 

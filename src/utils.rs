@@ -1,7 +1,6 @@
 use crate::args::Args;
 use anyhow::Result;
-use std::fs;
-use std::io::{self, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 pub fn install_unchecked<P: AsRef<Path>>(from: P, to: P, args: &Args) -> Result<()> {
@@ -11,7 +10,7 @@ pub fn install_unchecked<P: AsRef<Path>>(from: P, to: P, args: &Args) -> Result<
         if from.as_ref().is_dir() {
             copy_dir::copy_dir(from, to)?;
         } else {
-            fs::copy(from, to)?;
+            std::fs::copy(from, to)?;
         }
     }
     Ok(())
@@ -30,8 +29,8 @@ pub fn install<P: AsRef<Path>>(from: P, to: P, args: &Args) -> Result<()> {
                 "Warning: Do you want to replace '{}' (y/N): ",
                 path.display()
             );
-            io::stdout().flush()?;
-            io::stdin().read_line(&mut choice)?;
+            std::io::stdout().flush()?;
+            std::io::stdin().read_line(&mut choice)?;
 
             match choice.trim().to_lowercase().as_str() {
                 "y" => {
@@ -69,6 +68,16 @@ pub fn get_bin_dir() -> PathBuf {
     dirs::executable_dir().unwrap_or(PathBuf::from("~/.local/bin/"))
 }
 
+pub fn create_dirs() -> Result<()> {
+    if !get_config_dir().exists() {
+        std::fs::create_dir(get_config_dir())?;
+    }
+    if !get_bin_dir().exists() {
+        std::fs::create_dir(get_bin_dir())?;
+    }
+    Ok(())
+}
+
 pub fn get_shell_config_path() -> PathBuf {
     if let Ok(shell) = std::env::var("SHELL") {
         if let Some(basename) = PathBuf::from(shell).file_name() {
@@ -78,7 +87,7 @@ pub fn get_shell_config_path() -> PathBuf {
     get_home_dir().join(".bashrc")
 }
 
-pub fn check_bin_dir() -> bool {
+pub fn check_path() -> bool {
     if let Some(dir) = get_bin_dir().to_str() {
         std::env::var("PATH").is_ok_and(|path| path.contains(dir))
     } else {
@@ -87,7 +96,7 @@ pub fn check_bin_dir() -> bool {
 }
 
 pub fn export_bin_dir() -> Result<()> {
-    if !check_bin_dir() {
+    if !check_path() {
         let mut config = std::fs::File::open(get_shell_config_path())?;
         let export = format!("export PATH=\"$PATH:{}\"", get_bin_dir().display());
         config.write_all(export.as_bytes())?;
