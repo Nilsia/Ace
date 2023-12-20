@@ -1,7 +1,6 @@
 use crate::args::Args;
 use crate::utils::{
-    find_common_ancestor, find_relative_path, get_bin_dir, get_config_dir, get_data_dir,
-    make_absolute,
+    find_common_path, find_relative_path, get_bin_dir, get_config_dir, get_data_dir, make_absolute,
 };
 use crate::utils::{BLUE, GREEN, NC, RED, RESTORE, SAVE, YELLOW};
 use anyhow::{anyhow, Result};
@@ -17,14 +16,6 @@ pub trait Package {
     fn config(&self) -> Option<&PathBuf>;
 
     fn lib(&self) -> Option<&PathBuf>;
-
-    fn parent(&self) -> Option<PathBuf> {
-        if let Some(lib) = self.lib() {
-            find_common_ancestor(self.bin(), lib).ok()
-        } else {
-            Some(self.bin().clone())
-        }
-    }
 
     fn get_bin_name(&self) -> String {
         self.bin()
@@ -71,7 +62,7 @@ pub trait Package {
             self.install_files(self.bin(), &self.get_bin_path(), args)
         } else {
             let lib = self.lib().unwrap();
-            let ancestor = find_common_ancestor(self.bin(), lib)?;
+            let ancestor = find_common_path(self.bin(), lib)?;
             let path = get_data_dir().join(self.name());
             self.install_files(&ancestor, &path, args)?;
             // Activate symbolic in args to link bin to lib

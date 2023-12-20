@@ -84,7 +84,7 @@ pub fn make_absolute<P: AsRef<Path>>(path: P) -> Result<PathBuf> {
     }
 }
 
-pub fn find_common_ancestor<P: AsRef<Path>>(one: P, two: P) -> Result<PathBuf> {
+pub fn find_common_path<P: AsRef<Path>>(one: P, two: P) -> Result<PathBuf> {
     let mut result = PathBuf::new();
     let one = make_absolute(one)?;
     let two = make_absolute(two)?;
