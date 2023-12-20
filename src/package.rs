@@ -94,17 +94,17 @@ pub trait Package {
         if args.symbolic {
             std::os::unix::fs::symlink(env::current_dir()?.join(&from), &to)?;
             println!(
-                "{BLUE}INSTALLED{NC}: {} {BLUE}->{} {NC}",
+                "{BLUE}INSTALLED{NC}: {} {BLUE}->{NC} {}",
                 from.as_ref().display(),
                 to.as_ref().display()
             );
-            std::io::stdout().flush()?;
         } else {
-            println!(
+            print!(
                 "{SAVE}INSTALLING: {} -> {}",
                 from.as_ref().display(),
                 to.as_ref().display()
             );
+            io::stdout().flush()?;
 
             if from.as_ref().is_dir() {
                 copy_dir::copy_dir(&from, &to)?;
@@ -137,7 +137,6 @@ pub trait Package {
                 io::stdout().flush()?;
                 io::stdin().read_line(&mut choice)?;
 
-                println!("{RESTORE}");
                 match choice.trim().to_lowercase().as_str() {
                     "y" => {
                         self.remove_files_unchecked(&to)?;
@@ -157,19 +156,16 @@ pub trait Package {
             let mut choice = String::new();
 
             let display = path.display();
-            io::stdout().write_all(SAVE.as_bytes())?;
             print!(
-                "{YELLOW}WARNING{NC}: Do you want to remove '{}' (Y/n): ",
+                "{SAVE}{YELLOW}WARNING{NC}: Do you want to remove '{}' (Y/n): ",
                 display
             );
             io::stdout().flush()?;
             io::stdin().read_line(&mut choice)?;
-            io::stdout().write_all(RESTORE.as_bytes())?;
 
-            io::stdout().flush()?;
             match choice.trim().to_lowercase().as_str() {
                 "n" => {
-                    println!("WARNING: Canceled '{}' deletion", display);
+                    println!("{YELLOW}WARNING{NC}: Canceled '{}' deletion", display);
                     Ok(())
                 }
                 _ => self.remove_files_unchecked(path),
@@ -178,10 +174,11 @@ pub trait Package {
             Ok(())
         }
     }
+
     fn remove_files_unchecked<P: AsRef<Path>>(&self, path: P) -> Result<()> {
         if path.as_ref().exists() || path.as_ref().is_symlink() {
             let display = path.as_ref().display();
-            println!("{SAVE}{RED}DELETING{NC}: {}", display);
+            print!("{SAVE}{RED}DELETING{NC}: {}", display);
             io::stdout().flush()?;
 
             if path.as_ref().is_dir() {
@@ -191,7 +188,6 @@ pub trait Package {
             }
 
             println!("{RESTORE}{RED}DELETED{NC}: {}", display);
-            io::stdout().flush()?;
         }
         Ok(())
     }
@@ -199,9 +195,15 @@ pub trait Package {
     fn is_valid(&self) -> Result<bool> {
         // TODO handle lib and requires
         if !self.bin().exists() {
-            Err(anyhow!("Binary is not present"))
+            Err(anyhow!(
+                "{RED}ERROR{NC}: '{}' is not present",
+                self.bin().display()
+            ))
         } else if self.config().is_some_and(|v| !v.exists()) {
-            Err(anyhow!("Configuration is not present"))
+            Err(anyhow!(
+                "{RED}ERROR{NC}: '{}' is not present",
+                self.config().unwrap().display()
+            ))
         } else {
             Ok(true)
         }

@@ -3,7 +3,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 pub const SAVE: &str = "\x1b[s";
-pub const RESTORE: &str = "\x1b[u";
+pub const RESTORE: &str = "\x1b[2K\x1b[u";
 
 pub const RED: &str = "\x1b[0;31m";
 pub const GREEN: &str = "\x1b[0;32m";
