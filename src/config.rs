@@ -1,6 +1,6 @@
 use crate::args::Args;
 use crate::editor::Editor;
-use crate::package::Package;
+use crate::tools::Tools;
 use anyhow::Result;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -12,7 +12,7 @@ pub const DEFAULT_FILENAME: &str = "config.toml";
 #[derive(Deserialize, Debug)]
 pub struct Config {
     pub editor: Editor,
-    pub packages: HashMap<String, Package>,
+    pub tools: HashMap<String, Tools>,
 }
 
 impl Config {
@@ -22,7 +22,7 @@ impl Config {
 
     pub fn install(&mut self, args: &Args) -> Result<()> {
         self.editor.try_install(args)?;
-        for package in self.packages.values_mut() {
+        for package in self.tools.values_mut() {
             package.try_install(args)?;
         }
         Ok(())
@@ -30,7 +30,7 @@ impl Config {
 
     pub fn remove(&mut self, args: &Args) -> Result<()> {
         self.editor.remove(args)?;
-        for package in self.packages.values_mut() {
+        for package in self.tools.values_mut() {
             package.remove(args)?;
         }
         Ok(())
