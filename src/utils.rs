@@ -57,10 +57,40 @@ pub fn remove<P: AsRef<Path>>(path: P) -> Result<()> {
     Ok(())
 }
 
+pub fn get_home_dir() -> PathBuf {
+    dirs::home_dir().unwrap_or(PathBuf::from("~"))
+}
+
 pub fn get_config_dir() -> PathBuf {
     dirs::config_dir().unwrap_or(PathBuf::from("~/.config/"))
 }
 
 pub fn get_bin_dir() -> PathBuf {
     dirs::executable_dir().unwrap_or(PathBuf::from("~/.local/bin/"))
+}
+
+pub fn get_shell_config_path() -> PathBuf {
+    if let Ok(shell) = std::env::var("SHELL") {
+        if let Some(basename) = PathBuf::from(shell).file_name() {
+            return get_home_dir().join(format!(".{}rc", basename.to_string_lossy()));
+        }
+    }
+    get_home_dir().join(".bashrc")
+}
+
+pub fn check_bin_dir() -> bool {
+    if let Some(dir) = get_bin_dir().to_str() {
+        std::env::var("PATH").is_ok_and(|path| path.contains(dir))
+    } else {
+        false
+    }
+}
+
+pub fn export_bin_dir() -> Result<()> {
+    if !check_bin_dir() {
+        let mut config = std::fs::File::open(get_shell_config_path())?;
+        let export = format!("export PATH=\"$PATH:{}\"", get_bin_dir().display());
+        config.write_all(export.as_bytes())?;
+    }
+    Ok(())
 }

@@ -2,6 +2,7 @@ use crate::args::Args;
 use crate::editor::Editor;
 use crate::package::Package;
 use crate::tools::Tools;
+use crate::utils::export_bin_dir;
 use anyhow::Result;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -33,6 +34,7 @@ impl Config {
                 package.install(args)?;
             }
         }
+        export_bin_dir()?;
         Ok(())
     }
 
