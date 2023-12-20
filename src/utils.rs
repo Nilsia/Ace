@@ -2,6 +2,15 @@ use anyhow::Result;
 use std::io::Write;
 use std::path::PathBuf;
 
+pub const SAVE: &str = "\x1b[s";
+pub const RESTORE: &str = "\x1b[u";
+
+pub const RED: &str = "\x1b[0;31m";
+pub const GREEN: &str = "\x1b[0;32m";
+pub const YELLOW: &str = "\x1b[0;33m";
+pub const BLUE: &str = "\x1b[0;34m";
+pub const NC: &str = "\x1b[0m";
+
 pub fn get_home_dir() -> PathBuf {
     dirs::home_dir().unwrap_or(PathBuf::from("~"))
 }
@@ -51,6 +60,7 @@ pub fn export_bin_dir() -> Result<()> {
     }
     Ok(())
 }
-pub fn clear_line() -> anyhow::Result<()> {
-    Ok(std::io::stdout().write_all(format!("\x1b[u").as_bytes())?)
+
+pub fn clear_line() -> Result<()> {
+    Ok(std::io::stdout().write_all(b"\x1b[u")?)
 }
