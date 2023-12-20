@@ -2,11 +2,12 @@ use crate::args::Args;
 use crate::editor::Editor;
 use crate::package::Package;
 use crate::tools::Tools;
-use crate::utils::{create_dirs, export_bin_dir};
+use crate::utils::{create_dirs, export_bin_dir, get_shell_config_path};
 use anyhow::Result;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::Path;
+use std::process::Command;
 
 pub const DEFAULT_FILENAME: &str = "config.toml";
 
@@ -36,6 +37,7 @@ impl Config {
                 package.install(args)?;
             }
         }
+        println!("Refresh your terminal for the changes to take effect.");
         Ok(())
     }
 

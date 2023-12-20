@@ -1,60 +1,6 @@
-use crate::args::Args;
 use anyhow::Result;
 use std::io::Write;
-use std::path::{Path, PathBuf};
-
-pub fn install_unchecked<P: AsRef<Path>>(from: P, to: P, args: &Args) -> Result<()> {
-    if args.symbolic {
-        std::os::unix::fs::symlink(from, to)?;
-    } else {
-        if from.as_ref().is_dir() {
-            copy_dir::copy_dir(from, to)?;
-        } else {
-            std::fs::copy(from, to)?;
-        }
-    }
-    Ok(())
-}
-
-pub fn install<P: AsRef<Path>>(from: P, to: P, args: &Args) -> Result<()> {
-    if args.force {
-        remove(&to)?;
-        install_unchecked(from, to, args)
-    } else {
-        let path = to.as_ref();
-        if path.exists() {
-            let mut choice = String::new();
-
-            print!(
-                "Warning: Do you want to replace '{}' (y/N): ",
-                path.display()
-            );
-            std::io::stdout().flush()?;
-            std::io::stdin().read_line(&mut choice)?;
-
-            match choice.trim().to_lowercase().as_str() {
-                "y" => {
-                    remove(&to)?;
-                    install_unchecked(from, to, args)
-                }
-                _ => Ok(()),
-            }
-        } else {
-            install_unchecked(from, to, args)
-        }
-    }
-}
-
-pub fn remove<P: AsRef<Path>>(path: P) -> Result<()> {
-    if path.as_ref().exists() {
-        if path.as_ref().is_dir() {
-            std::fs::remove_dir_all(path)?;
-        } else {
-            std::fs::remove_file(path)?;
-        }
-    }
-    Ok(())
-}
+use std::path::PathBuf;
 
 pub fn get_home_dir() -> PathBuf {
     dirs::home_dir().unwrap_or(PathBuf::from("~"))
@@ -73,7 +19,7 @@ pub fn create_dirs() -> Result<()> {
         std::fs::create_dir(get_config_dir())?;
     }
     if !get_bin_dir().exists() {
-        std::fs::create_dir(get_bin_dir())?;
+        std::fs::create_dir_all(get_bin_dir())?;
     }
     Ok(())
 }
@@ -97,9 +43,14 @@ pub fn check_path() -> bool {
 
 pub fn export_bin_dir() -> Result<()> {
     if !check_path() {
-        let mut config = std::fs::File::open(get_shell_config_path())?;
-        let export = format!("export PATH=\"$PATH:{}\"", get_bin_dir().display());
+        let mut config = std::fs::OpenOptions::new()
+            .append(true)
+            .open(get_shell_config_path())?;
+        let export = format!("export PATH=\"$PATH:{}\"\n", get_bin_dir().display());
         config.write_all(export.as_bytes())?;
     }
     Ok(())
+}
+pub fn clear_line() -> anyhow::Result<()> {
+    Ok(std::io::stdout().write_all(format!("\x1b[u").as_bytes())?)
 }
