@@ -64,3 +64,12 @@ pub fn export_bin_dir() -> Result<()> {
 pub fn clear_line() -> Result<()> {
     Ok(std::io::stdout().write_all(b"\x1b[u")?)
 }
+pub fn vec_includes<P, V, U>(owner: V, includer: U) -> bool
+where
+    P: PartialEq,
+    V: IntoIterator<Item = P>,
+    U: IntoIterator<Item = P>,
+{
+    let owner_vec = owner.into_iter().collect::<Vec<P>>();
+    includer.into_iter().all(|v| owner_vec.contains(&v))
+}

@@ -2,8 +2,8 @@ use crate::args::Args;
 use crate::editor::Editor;
 use crate::package::Package;
 use crate::tools::Tools;
-use crate::utils::{create_dirs, export_bin_dir};
-use anyhow::Result;
+use crate::utils::{create_dirs, export_bin_dir, vec_includes};
+use anyhow::{anyhow, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::Path;
@@ -58,6 +58,31 @@ impl Config {
                 tool.is_valid()?;
             }
         }
+
+        //check that all required tools are in the configuration
+        if self
+            .tools
+            .as_ref()
+            .is_some_and(|v| vec_includes(v.keys(), self.get_all_required_package()))
+        {
+            return Err(anyhow!("All required tools are not present"));
+        }
         Ok(true)
+    }
+
+    fn get_all_required_package(&self) -> Vec<&String> {
+        let mut requires: Vec<&String> = Vec::new();
+        if self.tools.is_some() {
+            for tool in self.tools.as_ref().unwrap().values() {
+                if let Some(required) = tool.requires.as_ref() {
+                    for tool_req in required {
+                        if !requires.contains(&tool_req) {
+                            requires.push(tool_req);
+                        }
+                    }
+                }
+            }
+        }
+        requires
     }
 }
