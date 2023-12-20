@@ -13,13 +13,14 @@ pub struct Editor {
     pub lib: Option<PathBuf>,
 }
 
+// Editor ressemble beaucoup à `Package` au final
 impl Editor {
     pub fn try_install(&self, args: &Args) -> Result<()> {
-        self.try_install_bin(args)?;
-        self.try_install_config(args)
+        self.install_bin(args)?;
+        self.install_config(args)
     }
 
-    pub fn install_bin(&self, args: &Args) -> Result<()> {
+    pub fn install_bin_unchecked(&self, args: &Args) -> Result<()> {
         if args.symbolic {
             std::os::unix::fs::symlink(&self.binary, self.get_bin_path())?;
         } else {
@@ -28,13 +29,66 @@ impl Editor {
         Ok(())
     }
 
-    pub fn install_config(&self, args: &Args) -> Result<()> {
+    pub fn install_config_unchecked(&self, args: &Args) -> Result<()> {
         if args.symbolic {
             std::os::unix::fs::symlink(&self.config, self.get_config_path())?;
         } else {
             fs::copy(&self.config, self.get_config_path())?;
         }
         Ok(())
+    }
+
+    // TODO: Les deux méthodes se ressemblent beaucoup, il faudrait généraliser
+    pub fn install_bin(&self, args: &Args) -> Result<()> {
+        if args.force {
+            self.remove_bin(args)?;
+            self.install_bin_unchecked(args)
+        } else {
+            let binary = self.get_config_path();
+            let mut answer = String::new();
+
+            if binary.exists() {
+                println!(
+                    "{} already exists, do you want to overwrite it (y/N) ? ",
+                    &self.name
+                );
+                std::io::stdin().read_line(&mut answer)?;
+            }
+
+            match answer.trim().to_lowercase().as_str() {
+                "y" => {
+                    self.remove_bin(args)?;
+                    self.install_bin_unchecked(args)
+                }
+                _ => Ok(()),
+            }
+        }
+    }
+
+    pub fn install_config(&self, args: &Args) -> Result<()> {
+        if args.force {
+            self.remove_config(args)?;
+            self.install_config_unchecked(args)
+        } else {
+            let config = self.get_config_path();
+            let mut answer = String::new();
+
+            if config.exists() {
+                println!(
+                    "{} already exists, do you want to overwrite it (y/N) ? ",
+                    &self.name
+                );
+                std::io::stdin().read_line(&mut answer)?;
+            }
+
+            match answer.trim().to_lowercase().as_str() {
+                "y" => {
+                    self.remove_config(args)?;
+                    self.install_config_unchecked(args)
+                }
+                _ => Ok(()),
+            }
+        }
     }
 
     pub fn remove(&self, args: &Args) -> Result<()> {
@@ -76,58 +130,5 @@ impl Editor {
 
     fn get_config_path(&self) -> PathBuf {
         get_config_path().join(self.get_config_name())
-    }
-
-    // TODO: Les deux méthodes se ressemblent beaucoup, il faudrait généraliser
-    fn try_install_bin(&self, args: &Args) -> Result<()> {
-        if args.force {
-            self.remove_bin(args)?;
-            self.install_bin(args)
-        } else {
-            let binary = self.get_config_path();
-            let mut answer = String::new();
-
-            if binary.exists() {
-                println!(
-                    "{} already exists, do you want to overwrite it (y/N) ? ",
-                    &self.name
-                );
-                std::io::stdin().read_line(&mut answer)?;
-            }
-
-            match answer.trim().to_lowercase().as_str() {
-                "y" => {
-                    self.remove_bin(args)?;
-                    self.install_bin(args)
-                }
-                _ => Ok(()),
-            }
-        }
-    }
-
-    fn try_install_config(&self, args: &Args) -> Result<()> {
-        if args.force {
-            self.remove_config(args)?;
-            self.install_config(args)
-        } else {
-            let config = self.get_config_path();
-            let mut answer = String::new();
-
-            if config.exists() {
-                println!(
-                    "{} already exists, do you want to overwrite it (y/N) ? ",
-                    &self.name
-                );
-                std::io::stdin().read_line(&mut answer)?;
-            }
-
-            match answer.trim().to_lowercase().as_str() {
-                "y" => {
-                    self.remove_config(args)?;
-                    self.install_config(args)
-                }
-                _ => Ok(()),
-            }
-        }
     }
 }

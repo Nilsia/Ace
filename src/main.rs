@@ -11,8 +11,8 @@ fn main() -> anyhow::Result<()> {
     println!("{:#?}", config);
 
     match args.action {
-        Action::Install => todo!(),
-        Action::Remove => todo!(),
+        Action::Install => config.install(&args),
+        Action::Remove => config.remove(&args),
         Action::Update => todo!(),
     }
 }

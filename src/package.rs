@@ -22,7 +22,7 @@ impl Package {
     }
 
     pub fn install_requirements(&self, args: &Args) -> Result<()> {
-        // Il faudra sans doute prendre la config en paramêtre
+        // Il faudra sans doute prendre la config en paramètre
         todo!()
     }
 
