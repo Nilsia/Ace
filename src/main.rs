@@ -6,7 +6,7 @@ use editor::utils::{NC, RED};
 
 fn main() {
     let args = Args::parse();
-    match Config::from_file(&args.config) {
+    match Config::from_file(&args.config, &args) {
         Ok(config) => {
             println!("{args:#?}");
             println!("{config:#?}");

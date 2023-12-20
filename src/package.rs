@@ -131,7 +131,7 @@ pub trait Package {
         let t_display = to.as_ref().display();
         if args.symbolic {
             std::os::unix::fs::symlink(make_absolute(&from)?, &to)?;
-            println!("{BLUE}LINKED{NC}: {f_display} {BLUE}->{NC} {t_display}");
+            println!("{BLUE}LINKED{NC}: {t_display} {BLUE}->{NC} {f_display}");
         } else {
             print!("{SAVE}INSTALLING: {f_display} -> {t_display}");
             io::stdout().flush()?;
