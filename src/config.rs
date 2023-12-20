@@ -11,9 +11,28 @@ use std::path::{Path, PathBuf};
 pub const DEFAULT_FILENAME: &str = "config.toml";
 
 #[derive(Debug)]
-struct UnSatisfiedTools<'a> {
+struct UnSatisfiedTools<'l> {
     required: Tool,
-    parent_tool: &'a Tool,
+    parent_tool: &'l Tool,
+}
+
+#[derive(Debug)]
+struct Dependencies<'l> {
+    satisfied_keys: Vec<&'l String>,
+    satisfied_tools: Vec<&'l Tool>,
+    unsatisfied_keys: Vec<&'l String>,
+    unsatisfied_tools: Vec<UnSatisfiedTools<'l>>,
+}
+
+impl<'l> Dependencies<'l> {
+    pub fn new() -> Self {
+        Dependencies {
+            satisfied_keys: Vec::new(),
+            satisfied_tools: Vec::new(),
+            unsatisfied_keys: Vec::new(),
+            unsatisfied_tools: Vec::new(),
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -40,8 +59,8 @@ impl Config {
         export_bin_dir()?;
 
         self.editor.install(args)?;
-        let tools = self.get_satisfied_and_unsatisfied_tools(args)?.0;
-        for tool in &tools {
+        let dependencies = self.get_dependencies(args)?;
+        for tool in &dependencies.satisfied_tools {
             tool.install(args)?;
         }
 
@@ -52,8 +71,8 @@ impl Config {
     pub fn remove(&self, args: &Args) -> Result<()> {
         self.editor.remove(args)?;
 
-        let tools = self.get_satisfied_and_unsatisfied_tools(args)?.0;
-        for tool in &tools {
+        let dependencies = self.get_dependencies(args)?;
+        for tool in &dependencies.satisfied_tools {
             tool.remove(args)?;
         }
 
@@ -75,29 +94,23 @@ impl Config {
             ));
         }
 
-        let unsatisfied_tools = self.get_satisfied_and_unsatisfied_tools(args)?.1;
-        if !unsatisfied_tools.is_empty() {
-            return Err(anyhow!(self.print_unsatisfied_tools(&unsatisfied_tools)));
+        let dependencies = self.get_dependencies(args)?;
+        if !dependencies.unsatisfied_tools.is_empty() {
+            return Err(anyhow!(Self::print_unsatisfied_dependencies(&dependencies)));
         }
 
         Ok(true)
     }
 
-    fn get_satisfied_and_unsatisfied_tools<'a>(
-        &'a self,
-        args: &'a Args,
-    ) -> Result<(Vec<&Tool>, Vec<UnSatisfiedTools>)> {
-        let mut satisfied_tools: Vec<&Tool> = Vec::new();
-        let mut unsatisfied_tools: Vec<UnSatisfiedTools> = Vec::new();
+    fn get_dependencies<'l>(&'l self, args: &'l Args) -> Result<Dependencies> {
+        let mut dependencies = Dependencies::new();
         if let Some(tools) = self.tools.as_ref() {
-            let mut satisfied_keys: Vec<&String> = Vec::new();
-            let mut unsatisfied_keys: Vec<&String> = Vec::new();
             let available_tool_keys: Vec<&String> = tools.keys().collect();
-            let mut asked_tools: Vec<(&String, &Tool)> = vec![];
+            let mut required_tools: Vec<(&String, &Tool)> = vec![];
             if let Some(args_tools) = args.packages.as_ref() {
                 for tool_key in args_tools {
                     if let Some(tool) = tools.get(tool_key) {
-                        asked_tools.push((tool_key, tool));
+                        required_tools.push((tool_key, tool));
                     } else {
                         return Err(anyhow!(
                             "A package from arguments is not present in configuration: '{tool_key}'"
@@ -105,74 +118,59 @@ impl Config {
                     }
                 }
             } else {
-                asked_tools = tools.iter().collect();
+                required_tools = tools.iter().collect();
             }
 
-            for tool in asked_tools {
-                self.get_satisfied_and_unsatisfied_tools_rec(
-                    &available_tool_keys,
-                    tool.1,
-                    tool.0,
-                    &mut satisfied_keys,
-                    &mut satisfied_tools,
-                    &mut unsatisfied_keys,
-                    &mut unsatisfied_tools,
-                )
+            for tool in required_tools {
+                self.get_dependencies_rec(&available_tool_keys, tool.1, tool.0, &mut dependencies);
             }
         }
-        Ok((satisfied_tools, unsatisfied_tools))
+
+        Ok(dependencies)
     }
 
-    fn get_satisfied_and_unsatisfied_tools_rec<'a>(
-        &'a self,
+    fn get_dependencies_rec<'l>(
+        &'l self,
         available_tool_keys: &[&String],
-        current_tool: &'a Tool,
-        current_tool_key: &'a String,
-        satisfied_keys: &mut Vec<&'a String>,
-        satisfied_tools: &mut Vec<&'a Tool>,
-        unsatisfied_keys: &mut Vec<&'a String>,
-        unsatisfied_tools: &mut Vec<UnSatisfiedTools<'a>>,
+        current_tool: &'l Tool,
+        current_tool_key: &'l String,
+        dependencies: &mut Dependencies<'l>,
     ) {
-        if available_tool_keys.contains(&current_tool_key) {
-            if !satisfied_keys.contains(&current_tool_key) {
-                satisfied_keys.push(current_tool_key);
-                satisfied_tools.push(current_tool);
-                if let Some(required) = current_tool.requires.as_ref() {
-                    for tool_key in required {
-                        if let Some(required_tool_key) =
-                            self.tools.as_ref().unwrap().get(tool_key).as_ref()
-                        {
-                            self.get_satisfied_and_unsatisfied_tools_rec(
-                                available_tool_keys,
-                                &required_tool_key,
-                                tool_key,
-                                satisfied_keys,
-                                satisfied_tools,
-                                unsatisfied_keys,
-                                unsatisfied_tools,
-                            );
-                        } else {
-                            unsatisfied_keys.push(tool_key);
-                            unsatisfied_tools.push(UnSatisfiedTools {
-                                required: Tool {
-                                    name: tool_key.to_owned(),
-                                    bin: PathBuf::new(),
-                                    config: None,
-                                    lib: None,
-                                    requires: None,
-                                },
-                                parent_tool: current_tool,
-                            });
-                        }
+        if available_tool_keys.contains(&current_tool_key)
+            && !dependencies.satisfied_keys.contains(&current_tool_key)
+        {
+            dependencies.satisfied_keys.push(current_tool_key);
+            dependencies.satisfied_tools.push(current_tool);
+            if let Some(required) = current_tool.requires.as_ref() {
+                for tool_key in required {
+                    if let Some(required_tool_key) = self.tools.as_ref().unwrap().get(tool_key) {
+                        self.get_dependencies_rec(
+                            available_tool_keys,
+                            required_tool_key,
+                            tool_key,
+                            dependencies,
+                        );
+                    } else {
+                        dependencies.unsatisfied_keys.push(tool_key);
+                        dependencies.unsatisfied_tools.push(UnSatisfiedTools {
+                            required: Tool {
+                                name: tool_key.to_owned(),
+                                bin: PathBuf::new(),
+                                config: None,
+                                lib: None,
+                                requires: None,
+                            },
+                            parent_tool: current_tool,
+                        });
                     }
                 }
             }
         }
     }
 
-    fn print_unsatisfied_tools(&self, unsatisfied_tools: &[UnSatisfiedTools]) -> String {
+    fn print_unsatisfied_dependencies(dependencies: &Dependencies) -> String {
         let mut res = String::from("The following dependencies are not satisfied");
-        for tool in unsatisfied_tools {
+        for tool in &dependencies.unsatisfied_tools {
             res.push_str(&format!(
                 "\n- '{}' depends on '{}'",
                 tool.parent_tool.name, tool.required.name
