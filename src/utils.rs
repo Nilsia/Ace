@@ -20,7 +20,10 @@ pub fn install<P: AsRef<Path>>(from: P, to: P, args: &Args) -> Result<()> {
         if path.exists() {
             let mut choice = String::new();
 
-            print!("Attention: voulez vous remplacer {}", path.display());
+            print!(
+                "Warning: Do you want to replace '{}' (y/N): ",
+                path.display()
+            );
             io::stdin().read_line(&mut choice)?;
 
             match choice.trim().to_lowercase().as_str() {
