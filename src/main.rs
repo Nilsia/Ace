@@ -6,6 +6,10 @@ use editor::utils::{NC, RED};
 
 fn main() {
     let args = Args::parse();
+    if let Err(e) = args.is_valid() {
+        eprintln!("{RED}ERROR{NC}: {e}");
+        return;
+    }
     match Config::from_file(&args.config, &args) {
         Ok(config) => {
             // println!("{args:#?}");
