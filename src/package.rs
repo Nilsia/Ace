@@ -19,7 +19,7 @@ pub trait Package {
 
     fn get_bin_name(&self) -> String {
         self.bin()
-            .file_name()
+            .file_stem()
             .and_then(|name| name.to_str())
             .unwrap_or(self.name())
             .to_string()
@@ -27,15 +27,6 @@ pub trait Package {
 
     fn get_config_name(&self) -> Option<String> {
         self.config().map(|v| {
-            v.file_name()
-                .and_then(|name| name.to_str())
-                .unwrap_or(self.name())
-                .to_string()
-        })
-    }
-
-    fn get_lib_name(&self) -> Option<String> {
-        self.lib().map(|v| {
             v.file_name()
                 .and_then(|name| name.to_str())
                 .unwrap_or(self.name())
