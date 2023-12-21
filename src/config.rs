@@ -59,9 +59,11 @@ impl Config {
         export_bin_dir()?;
 
         self.editor.install(args)?;
-        let dependencies = self.get_dependencies(args)?;
-        for tool in &dependencies.satisfied_tools {
-            tool.install(args)?;
+        if !args.only_editor {
+            let dependencies = self.get_dependencies(args)?;
+            for tool in &dependencies.satisfied_tools {
+                tool.install(args)?;
+            }
         }
 
         println!("{GREEN}SUCCESS{NC}: Refresh your terminal for the changes to take effect");
@@ -71,11 +73,12 @@ impl Config {
     pub fn remove(&self, args: &Args) -> Result<()> {
         self.editor.remove(args)?;
 
-        let dependencies = self.get_dependencies(args)?;
-        for tool in &dependencies.satisfied_tools {
-            tool.remove(args)?;
+        if !args.only_editor {
+            let dependencies = self.get_dependencies(args)?;
+            for tool in &dependencies.satisfied_tools {
+                tool.remove(args)?;
+            }
         }
-
         println!("{GREEN}SUCCESS{NC}");
         Ok(())
     }

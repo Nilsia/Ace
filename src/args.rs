@@ -13,6 +13,7 @@ pub struct Args {
     #[arg(value_enum)]
     pub action: Action,
 
+    /// Provide config toml file configuration
     #[arg(short, long, default_value_t = String::from(DEFAULT_FILENAME))]
     pub config: String,
 
@@ -31,4 +32,8 @@ pub struct Args {
     /// Verbose mode
     #[arg(short, long, default_value_t = false)]
     pub verbose: bool,
+
+    /// Only make modifications on the editor
+    #[arg(long, default_value_t = false)]
+    pub only_editor: bool,
 }
