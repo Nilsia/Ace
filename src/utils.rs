@@ -59,7 +59,7 @@ pub fn export_bin_dir() -> Result<()> {
         let mut config = std::fs::OpenOptions::new()
             .append(true)
             .open(get_shell_config_path())?;
-        let export = format!("export PATH=\"$PATH:{}\"\n", get_bin_dir().display());
+        let export = format!("export PATH=\"{}:$PATH\"\n", get_bin_dir().display());
         config.write_all(export.as_bytes())?;
     }
     Ok(())
