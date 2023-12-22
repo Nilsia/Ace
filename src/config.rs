@@ -16,23 +16,12 @@ struct UnSatisfiedTools<'l> {
     parent_tool: &'l Tool,
 }
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 struct Dependencies<'l> {
     satisfied_keys: Vec<&'l String>,
     satisfied_tools: Vec<&'l Tool>,
     unsatisfied_keys: Vec<&'l String>,
     unsatisfied_tools: Vec<UnSatisfiedTools<'l>>,
-}
-
-impl<'l> Dependencies<'l> {
-    pub fn new() -> Self {
-        Dependencies {
-            satisfied_keys: Vec::new(),
-            satisfied_tools: Vec::new(),
-            unsatisfied_keys: Vec::new(),
-            unsatisfied_tools: Vec::new(),
-        }
-    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -103,7 +92,7 @@ impl Config {
     }
 
     fn get_dependencies<'l>(&'l self, args: &'l Args) -> Result<Dependencies> {
-        let mut dependencies = Dependencies::new();
+        let mut dependencies = Dependencies::default();
         if let Some(tools) = self.tools.as_ref() {
             let available_tool_keys: Vec<&String> = tools.keys().collect();
             let mut required_tools: Vec<(&String, &Tool)> = vec![];
