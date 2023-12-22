@@ -192,7 +192,7 @@ pub trait Package {
         Ok(())
     }
 
-    fn is_valid(&self) -> Result<bool> {
+    fn validate(&self) -> Result<()> {
         // TODO handle requires
         if !self.bin().exists() {
             let display = self.bin().display();
@@ -204,7 +204,7 @@ pub trait Package {
             let display = self.lib().unwrap().display();
             Err(anyhow!("'{display}' is not present"))
         } else {
-            Ok(true)
+            Ok(())
         }
     }
 }

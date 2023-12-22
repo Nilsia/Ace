@@ -8,7 +8,7 @@ pub struct Tool {
     pub bin: PathBuf,
     pub config: Option<PathBuf>,
     pub lib: Option<PathBuf>,
-    pub requires: Option<Vec<String>>,
+    pub dependencies: Option<Vec<String>>,
 }
 
 impl Package for Tool {

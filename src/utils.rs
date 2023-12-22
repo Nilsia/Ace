@@ -29,10 +29,13 @@ pub fn get_data_dir() -> PathBuf {
 
 pub fn create_dirs() -> Result<()> {
     if !get_config_dir().exists() {
-        std::fs::create_dir(get_config_dir())?;
+        std::fs::create_dir_all(get_config_dir())?;
     }
     if !get_bin_dir().exists() {
         std::fs::create_dir_all(get_bin_dir())?;
+    }
+    if !get_data_dir().exists() {
+        std::fs::create_dir_all(get_data_dir())?;
     }
     Ok(())
 }
@@ -65,7 +68,7 @@ pub fn export_bin_dir() -> Result<()> {
     Ok(())
 }
 
-pub fn vec_includes<P, V, U>(owner: V, includer: U) -> bool
+pub fn iter_includes<P, V, U>(owner: V, includer: U) -> bool
 where
     P: PartialEq,
     V: IntoIterator<Item = P>,
@@ -88,7 +91,7 @@ pub fn find_common_path<P: AsRef<Path>>(one: P, two: P) -> Result<PathBuf> {
     let mut result = PathBuf::new();
     let one = make_absolute(one)?;
     let two = make_absolute(two)?;
-
+    // Loop over paths components until they differs
     for (o, t) in one.components().zip(two.components()) {
         if o == t {
             result.push(o);
@@ -101,7 +104,7 @@ pub fn find_common_path<P: AsRef<Path>>(one: P, two: P) -> Result<PathBuf> {
         Ok(result)
     } else {
         Err(anyhow!(
-            "{RED}ERROR{NC}: No common ancestor for '{}' and '{}'",
+            "No common ancestor for '{}' and '{}'",
             one.display(),
             two.display()
         ))

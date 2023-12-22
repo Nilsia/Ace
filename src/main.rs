@@ -6,24 +6,22 @@ use editor::utils::{NC, RED};
 
 fn main() {
     let args = Args::parse();
-    if let Err(e) = args.is_valid() {
+    if let Err(e) = args.validate() {
         eprintln!("{RED}ERROR{NC}: {e}");
-        return;
-    }
-    match Config::from_file(&args.config, &args) {
-        Ok(config) => {
-            // println!("{args:#?}");
-            // println!("{config:#?}");
-            let res = match args.action {
-                Action::Install => config.install(&args),
-                Action::Remove => config.remove(&args),
-                Action::Update => todo!(),
-            };
+    } else {
+        match Config::from_file(&args.config, &args) {
+            Ok(config) => {
+                let res = match args.action {
+                    Action::Install => config.install(&args),
+                    Action::Remove => config.remove(&args),
+                    Action::Update => todo!(),
+                };
 
-            if let Err(e) = res {
-                eprintln!("{RED}ERROR{NC}: {e}");
+                if let Err(e) = res {
+                    eprintln!("{RED}ERROR{NC}: {e}");
+                }
             }
+            Err(e) => eprintln!("{RED}ERROR{NC}: {e}"),
         }
-        Err(e) => eprintln!("{RED}ERROR{NC}: {e}"),
     }
 }

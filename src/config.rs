@@ -33,12 +33,13 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn from_file<P: AsRef<Path>>(filename: P, args: &Args) -> Result<Config> {
-        if filename.as_ref().exists() {
-            let config: Config = toml::from_str(&std::fs::read_to_string(filename)?)?;
-            match config.is_valid(args) {
+    pub fn from_file<P: AsRef<Path>>(path: P, args: &Args) -> Result<Config> {
+        // Check if config exists
+        if path.as_ref().exists() {
+            let config: Config = toml::from_str(&std::fs::read_to_string(path)?)?;
+            match config.validate(args) {
+                Ok(()) => Ok(config),
                 Err(e) => Err(e),
-                Ok(_) => Ok(config),
             }
         } else {
             Err(anyhow!("No config file"))
@@ -46,12 +47,15 @@ impl Config {
     }
 
     pub fn install(&self, args: &Args) -> Result<()> {
+        // Create config/bin/data dirs and export bin to path
         create_dirs()?;
         export_bin_dir()?;
 
+        // Install editor
         if !args.except_editor {
             self.editor.install(args)?;
         }
+        // Install required tools
         if !args.only_editor {
             let dependencies = self.get_dependencies(args)?;
             for tool in &dependencies.satisfied_tools {
@@ -64,47 +68,53 @@ impl Config {
     }
 
     pub fn remove(&self, args: &Args) -> Result<()> {
+        // Remove editor
         if !args.except_editor {
             self.editor.remove(args)?;
         }
+        // Remove required tools
         if !args.only_editor {
             let dependencies = self.get_dependencies(args)?;
             for tool in &dependencies.satisfied_tools {
                 tool.remove(args)?;
             }
         }
+
         println!("{GREEN}SUCCESS{NC}");
         Ok(())
     }
 
-    fn is_valid(&self, args: &Args) -> Result<bool> {
-        self.editor.is_valid()?;
+    fn validate(&self, args: &Args) -> Result<()> {
+        // Check if editor and tools are valids
+        self.editor.validate()?;
         if let Some(tools) = self.tools.as_ref() {
             for tool in tools.values() {
-                tool.is_valid()?;
+                tool.validate()?;
             }
         }
-
+        // Check if args are valids
         if self.tools.is_none() && args.tools.is_some() {
             return Err(anyhow!(
                 "Please provide packages in you configuration before passing them as arguments"
             ));
         }
-
+        // Check if dependencies are satisfied
         let dependencies = self.get_dependencies(args)?;
         if !dependencies.unsatisfied_tools.is_empty() {
             return Err(anyhow!(Self::print_unsatisfied_dependencies(&dependencies)));
         }
 
-        Ok(true)
+        Ok(())
     }
 
     fn get_dependencies<'l>(&'l self, args: &'l Args) -> Result<Dependencies> {
+        // Create dependencies
         let mut dependencies = Dependencies::default();
         if let Some(tools) = self.tools.as_ref() {
             let available_tool_keys: Vec<&String> = tools.keys().collect();
             let mut required_tools: Vec<(&String, &Tool)> = vec![];
             if let Some(args_tools) = args.tools.as_ref() {
+                // For each dependencies check if it's available
                 for tool_key in args_tools {
                     if let Some(tool) = tools.get(tool_key) {
                         required_tools.push((tool_key, tool));
@@ -115,12 +125,11 @@ impl Config {
                     }
                 }
             }
-            // there are groups in config file
+            // For each group check if it exists
             else if let Some(groups) = self.groups.as_ref() {
                 for group_key in &args.groups {
-                    // given group in arguments exists in config
                     if let Some(group) = groups.get(group_key) {
-                        // iterate through tool to check if they exist
+                        // For each dependencies check if it's available
                         for tool_key in &group.dependencies {
                             if let Some(tool) = tools.get(tool_key) {
                                 required_tools.push((tool_key, tool));
@@ -129,10 +138,11 @@ impl Config {
                     }
                 }
             }
+            // If nothing is required, install everything
             if required_tools.is_empty() {
                 required_tools = tools.iter().collect();
             }
-
+            // Create dependencies recursively
             for tool in required_tools {
                 self.get_dependencies_rec(&available_tool_keys, tool.1, tool.0, &mut dependencies);
             }
@@ -153,7 +163,7 @@ impl Config {
         {
             dependencies.satisfied_keys.push(current_tool_key);
             dependencies.satisfied_tools.push(current_tool);
-            if let Some(required) = current_tool.requires.as_ref() {
+            if let Some(required) = current_tool.dependencies.as_ref() {
                 for tool_key in required {
                     if let Some(required_tool_key) = self.tools.as_ref().unwrap().get(tool_key) {
                         self.get_dependencies_rec(
@@ -170,7 +180,7 @@ impl Config {
                                 bin: PathBuf::new(),
                                 config: None,
                                 lib: None,
-                                requires: None,
+                                dependencies: None,
                             },
                             parent_tool: current_tool,
                         });
