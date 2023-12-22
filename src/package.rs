@@ -17,14 +17,6 @@ pub trait Package {
 
     fn lib(&self) -> Option<&PathBuf>;
 
-    fn get_bin_name(&self) -> String {
-        self.bin()
-            .file_stem()
-            .and_then(|name| name.to_str())
-            .unwrap_or(self.name())
-            .to_string()
-    }
-
     fn get_config_name(&self) -> Option<String> {
         self.config().map(|v| {
             v.file_name()
@@ -35,7 +27,7 @@ pub trait Package {
     }
 
     fn get_bin_path(&self) -> PathBuf {
-        get_bin_dir().join(self.get_bin_name())
+        get_bin_dir().join(self.name())
     }
 
     fn get_config_path(&self) -> Option<PathBuf> {

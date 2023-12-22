@@ -38,7 +38,7 @@ impl Config {
         if path.as_ref().exists() {
             let config: Config = toml::from_str(&std::fs::read_to_string(path)?)?;
             match config.validate(args) {
-                Ok(()) => Ok(config),
+                Ok(_) => Ok(config),
                 Err(e) => Err(e),
             }
         } else {
@@ -85,23 +85,29 @@ impl Config {
     }
 
     fn validate(&self, args: &Args) -> Result<()> {
-        // Check if editor and tools are valids
-        self.editor.validate()?;
-        if let Some(tools) = self.tools.as_ref() {
-            for tool in tools.values() {
+        // check if user does not except editor and is valid
+        if !args.except_editor {
+            self.editor.validate()?;
+        }
+
+        // check if user has excepted all tools
+        if !args.only_editor {
+            // check if no tools are present in config and tools / groups are provided
+            if self.tools.is_none() && (args.tools.is_some() || !args.groups.is_empty()) {
+                return Err(anyhow!(
+                    "Please provide tools in you configuration before passing tools or groups as arguments"
+                ));
+            }
+
+            // Check if dependencies are satisfied
+            let dependencies = self.get_dependencies(args)?;
+            if !dependencies.unsatisfied_tools.is_empty() {
+                return Err(anyhow!(Self::print_unsatisfied_dependencies(&dependencies)));
+            }
+
+            for tool in dependencies.satisfied_tools {
                 tool.validate()?;
             }
-        }
-        // Check if args are valids
-        if self.tools.is_none() && args.tools.is_some() {
-            return Err(anyhow!(
-                "Please provide packages in you configuration before passing them as arguments"
-            ));
-        }
-        // Check if dependencies are satisfied
-        let dependencies = self.get_dependencies(args)?;
-        if !dependencies.unsatisfied_tools.is_empty() {
-            return Err(anyhow!(Self::print_unsatisfied_dependencies(&dependencies)));
         }
 
         Ok(())
