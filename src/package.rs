@@ -1,6 +1,7 @@
 use crate::args::Args;
 use crate::utils::{
     find_common_path, find_relative_path, get_bin_dir, get_config_dir, get_data_dir, make_absolute,
+    prompt,
 };
 use crate::utils::{BLUE, GREEN, NC, RED, RESTORE, SAVE, YELLOW};
 use anyhow::{anyhow, Result};
@@ -125,14 +126,13 @@ pub trait Package {
         } else {
             let path = to.as_ref();
             if path.exists() || path.is_symlink() {
-                let mut choice = String::new();
-
                 let display = path.display();
-                print!("{SAVE}{YELLOW}WARNING{NC}: Do you want to overwrite '{display}' (y/N): ");
-                io::stdout().flush()?;
-                io::stdin().read_line(&mut choice)?;
 
-                match choice.trim().to_lowercase().as_str() {
+                match prompt(&format!(
+                    "{SAVE}{YELLOW}WARNING{NC}: Do you want to overwrite '{display}' (y/N): ",
+                ))?
+                .as_str()
+                {
                     "y" => {
                         self.remove_files_unchecked(&to)?;
                         self.install_files_unchecked(from, to, args)
@@ -148,14 +148,12 @@ pub trait Package {
     fn remove_files<P: AsRef<Path>>(&self, path: P) -> Result<()> {
         let path = path.as_ref();
         if path.exists() || path.is_symlink() {
-            let mut choice = String::new();
-
             let display = path.display();
-            print!("{SAVE}{YELLOW}WARNING{NC}: Do you want to remove '{display}' (Y/n): ");
-            io::stdout().flush()?;
-            io::stdin().read_line(&mut choice)?;
-
-            match choice.trim().to_lowercase().as_str() {
+            match prompt(&format!(
+                "{SAVE}{YELLOW}WARNING{NC}: Do you want to remove '{display}' (Y/n): "
+            ))?
+            .as_str()
+            {
                 "n" => {
                     println!("{YELLOW}WARNING{NC}: Canceled '{display}' deletion");
                     Ok(())

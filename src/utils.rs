@@ -57,15 +57,18 @@ pub fn check_path() -> bool {
     }
 }
 
-pub fn export_bin_dir() -> Result<()> {
+// retunr true if added to PATH and false otherwise
+pub fn export_bin_dir() -> Result<bool> {
     if !check_path() {
         let mut config = std::fs::OpenOptions::new()
             .append(true)
             .open(get_shell_config_path())?;
         let export = format!("export PATH=\"{}:$PATH\"\n", get_bin_dir().display());
         config.write_all(export.as_bytes())?;
+        Ok(true)
+    } else {
+        Ok(false)
     }
-    Ok(())
 }
 
 pub fn iter_includes<P, V, U>(owner: V, includer: U) -> bool
@@ -114,6 +117,16 @@ pub fn find_common_path<P: AsRef<Path>>(one: P, two: P) -> Result<PathBuf> {
 pub fn find_relative_path<P: AsRef<Path>>(from: P, to: P) -> Result<PathBuf> {
     let from = make_absolute(from)?;
     let to = make_absolute(to)?;
+    // let a = None;
+    // a.map_or_else(, )
 
     Ok(from.strip_prefix(to)?.to_path_buf())
+}
+
+pub fn prompt(message: &str) -> Result<String> {
+    print!("{message}");
+    let mut choice = String::new();
+    std::io::stdout().flush()?;
+    std::io::stdin().read_line(&mut choice)?;
+    Ok(choice)
 }

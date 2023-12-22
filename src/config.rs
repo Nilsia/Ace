@@ -49,7 +49,7 @@ impl Config {
     pub fn install(&self, args: &Args) -> Result<()> {
         // Create config/bin/data dirs and export bin to path
         create_dirs()?;
-        export_bin_dir()?;
+        let added = export_bin_dir()?;
 
         // Install editor
         if !args.except_editor {
@@ -63,7 +63,11 @@ impl Config {
             }
         }
 
-        println!("{GREEN}SUCCESS{NC}: Refresh your terminal for the changes to take effect");
+        if added {
+            println!("{GREEN}SUCCESS{NC}: Refresh your terminal for the changes to take effect");
+        } else {
+            println!("{GREEN}SUCCESS{NC} Your tools are righly installed in your system");
+        }
         Ok(())
     }
 
