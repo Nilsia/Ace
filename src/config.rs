@@ -1,5 +1,6 @@
 use crate::args::Args;
 use crate::editor::Editor;
+use crate::group::Group;
 use crate::package::Package;
 use crate::tool::Tool;
 use crate::utils::{create_dirs, export_bin_dir, GREEN, NC};
@@ -28,6 +29,7 @@ struct Dependencies<'l> {
 pub struct Config {
     pub editor: Editor,
     pub tools: Option<HashMap<String, Tool>>,
+    pub groups: Option<HashMap<String, Group>>,
 }
 
 impl Config {
@@ -47,10 +49,14 @@ impl Config {
         create_dirs()?;
         export_bin_dir()?;
 
-        self.editor.install(args)?;
-        let dependencies = self.get_dependencies(args)?;
-        for tool in &dependencies.satisfied_tools {
-            tool.install(args)?;
+        if !args.except_editor {
+            self.editor.install(args)?;
+        }
+        if !args.only_editor {
+            let dependencies = self.get_dependencies(args)?;
+            for tool in &dependencies.satisfied_tools {
+                tool.install(args)?;
+            }
         }
 
         println!("{GREEN}SUCCESS{NC}: Refresh your terminal for the changes to take effect");
@@ -58,13 +64,15 @@ impl Config {
     }
 
     pub fn remove(&self, args: &Args) -> Result<()> {
-        self.editor.remove(args)?;
-
-        let dependencies = self.get_dependencies(args)?;
-        for tool in &dependencies.satisfied_tools {
-            tool.remove(args)?;
+        if !args.except_editor {
+            self.editor.remove(args)?;
         }
-
+        if !args.only_editor {
+            let dependencies = self.get_dependencies(args)?;
+            for tool in &dependencies.satisfied_tools {
+                tool.remove(args)?;
+            }
+        }
         println!("{GREEN}SUCCESS{NC}");
         Ok(())
     }
@@ -77,7 +85,7 @@ impl Config {
             }
         }
 
-        if self.tools.is_none() && args.packages.is_some() {
+        if self.tools.is_none() && args.tools.is_some() {
             return Err(anyhow!(
                 "Please provide packages in you configuration before passing them as arguments"
             ));
@@ -96,7 +104,7 @@ impl Config {
         if let Some(tools) = self.tools.as_ref() {
             let available_tool_keys: Vec<&String> = tools.keys().collect();
             let mut required_tools: Vec<(&String, &Tool)> = vec![];
-            if let Some(args_tools) = args.packages.as_ref() {
+            if let Some(args_tools) = args.tools.as_ref() {
                 for tool_key in args_tools {
                     if let Some(tool) = tools.get(tool_key) {
                         required_tools.push((tool_key, tool));
@@ -106,7 +114,22 @@ impl Config {
                         ));
                     }
                 }
-            } else {
+            }
+            // there are groups in config file
+            else if let Some(groups) = self.groups.as_ref() {
+                for group_key in &args.groups {
+                    // given group in arguments exists in config
+                    if let Some(group) = groups.get(group_key) {
+                        // iterate through tool to check if they exist
+                        for tool_key in &group.dependencies {
+                            if let Some(tool) = tools.get(tool_key) {
+                                required_tools.push((tool_key, tool));
+                            }
+                        }
+                    }
+                }
+            }
+            if required_tools.is_empty() {
                 required_tools = tools.iter().collect();
             }
 
