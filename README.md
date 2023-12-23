@@ -22,28 +22,31 @@ Your configuration should be in the form of a [TOML](https://toml.io) file:
 
 ```toml
 # Main element, your text editor
+
 [editor]
-name = "hx" # This will be the name of the installed editor
-bin = "path/to/your/bin" # The executable
-config = "path/to/your/config" # The configuration (Optional)
-lib = "path/to/your/lib" # The library your executable may depends on (Optional)
+name = "hx"
+bin = "path/to/your/bin"
+config = "optional/path/to/your/config"
+lib = "optional/path/to/your/lib"
 
 # Secondary elements, your tools
+
 [tools.first]
-name = "first" # This will be the name of the installed executable
-bin = "path/to/first/bin" # Required 
-config = "path/to/first/config" # Optional
-lib = "path/to/first/lib" # Optional
-dependencies = ["second", ...] # Tools required for this tool to work (Optional)
+name = "first"
+bin = "path/to/first/bin"
+config = "optional/path/to/first/config"
+lib = "optional/path/to/first/lib"
+dependencies = ["second", "..."]
 
 [tools.second]
-...
+name = "..."
 
 # Third and last elements, your groups
+
 [groups.odd]
-name = "odd" # The name of the group
-dependencies = ["first", "third", ...] # Tools that will be installed when installing this group
+name = "odd"
+dependencies = ["first", "third", "..."]
 
 [groups.even]
-...
+name = "..."
 ```
