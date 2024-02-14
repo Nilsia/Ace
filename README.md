@@ -12,6 +12,7 @@ Options:
   -g, --groups <GROUPS>  Specify the groups you want to modify
   -s, --symbolic         Temporary install with symbolic names
   -f, --force            Force action
+  -v, --verbose          Verbose mode
       --only-editor      show version Only make modifications on the editor
       --except-editor    except the editor configuration works
   -h, --help             Print help
