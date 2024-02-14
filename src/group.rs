@@ -1,6 +1,7 @@
 use std::{collections::HashMap, io::Write};
 
 use crate::{
+    args::Args,
     dependencies::Dependencies,
     tool::Tool,
     utils::{CYAN, GREEN, NC, YELLOW},
@@ -19,6 +20,7 @@ impl Group {
         dependencies: &Dependencies,
         group_key: &String,
         tools: Option<&HashMap<String, Tool>>,
+        args: &Args,
     ) -> Result<()> {
         let dep_errors: Vec<(&String, String)> = self
             .dependencies
@@ -41,12 +43,16 @@ impl Group {
         } else {
             String::new()
         };
-        print!(
-            "Groupe : {GREEN}{}{NC} {}\n\tDependencies : \n",
-            group_key, group_error
-        );
-        for (key, error) in &dep_errors {
-            print!("\t - {key} {error}\n");
+        if args.verbose {
+            print!(
+                "Group : {GREEN}{}{NC} {}\n\tDependencies : \n",
+                group_key, group_error
+            );
+            for (key, error) in &dep_errors {
+                print!("\t - {key} {error}\n");
+            }
+        } else {
+            print!(" - {GREEN}{group_key}{NC} {group_error}\n");
         }
         std::io::stdout().flush()?;
         Ok(())

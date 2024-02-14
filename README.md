@@ -4,7 +4,7 @@ The CLI can be used with these options:
 Usage: editor [OPTIONS] <ACTION>
 
 Arguments:
-  <ACTION>  [possible values: install, remove, update]
+  <ACTION>  [possible values: install, remove, update, list]
 
 Options:
   -c, --config <CONFIG>  Provide config toml file configuration [default: config.toml]
@@ -12,9 +12,10 @@ Options:
   -g, --groups <GROUPS>  Specify the groups you want to modify
   -s, --symbolic         Temporary install with symbolic names
   -f, --force            Force action
-      --only-editor      Only make modifications on the editor
+      --only-editor      show version Only make modifications on the editor
       --except-editor    except the editor configuration works
   -h, --help             Print help
+  -V, --version          Print version
 ```
 
 ## Configuration
@@ -22,6 +23,8 @@ Your configuration should be in the form of a [TOML](https://toml.io) file:
 
 ```toml
 # Main element, your text editor
+
+default
 
 [editor]
 name = "hx"

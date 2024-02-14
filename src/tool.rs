@@ -1,4 +1,5 @@
 use crate::{
+    args::Args,
     dependencies::Dependencies,
     package::Package,
     utils::{CYAN, GREEN, NC, RED},
@@ -46,44 +47,57 @@ impl Tool {
         ])
     }
 
-    pub(crate) fn list(&self, dependencies: &Dependencies, tool_key: &String) -> Result<()> {
+    pub(crate) fn list(
+        &self,
+        dependencies: &Dependencies,
+        tool_key: &String,
+        args: &Args,
+    ) -> Result<()> {
         let self_map = self.generate_self_map();
         let error_tool = if dependencies.as_errors(tool_key) {
             format!("{CYAN}ERROR{NC}")
         } else {
             String::new()
         };
-        print!(
-            "Tool: {GREEN}{}{NC} (lsp: {GREEN}{}{NC}) {RED}{error_tool}{NC}\n",
-            tool_key, self.name,
-        );
+        if args.verbose {
+            print!(
+                "Tool: {GREEN}{}{NC} (lsp: {GREEN}{}{NC}) {error_tool}\n",
+                tool_key, self.name,
+            );
 
-        for (field_key, value) in self_map.iter() {
-            if let Some(label) = TOOL_FIELD_STR.get(field_key) {
-                print!(
-                    "\t{} : {} {RED}{}{NC}\n",
-                    label,
-                    value.map_or(String::from("not given"), |v| v.display().to_string()),
-                    dependencies
-                        .get_path_error(tool_key, field_key)
-                        .unwrap_or(String::new())
-                );
+            // print data inside Tools
+            for (field_key, value) in self_map.iter() {
+                if let Some(label) = TOOL_FIELD_STR.get(field_key) {
+                    print!(
+                        "\t{} : {} {RED}{}{NC}\n",
+                        label,
+                        value.map_or(String::from("not given"), |v| v.display().to_string()),
+                        dependencies
+                            .get_path_error(tool_key, field_key)
+                            .unwrap_or(String::new())
+                    );
+                }
             }
-        }
 
-        if let Some(deps) = self.dependencies.as_ref() {
-            print!("\tDependencies :\n");
-            for dep in deps {
-                print!(
-                    "\t - {} {RED}{}{NC}\n",
-                    dep,
-                    dependencies
-                        .get_error_dependencies(&String::from(tool_key), dep)
-                        .unwrap_or(String::new())
-                );
+            if let Some(deps) = self.dependencies.as_ref() {
+                print!("\tDependencies :\n");
+                for dep in deps {
+                    print!(
+                        "\t - {} {RED}{}{NC}\n",
+                        dep,
+                        dependencies
+                            .get_error_dependencies(&String::from(tool_key), dep)
+                            .unwrap_or(String::new())
+                    );
+                }
             }
+            print!("\n");
+        } else {
+            print!(
+                " - {GREEN}{tool_key}{NC} (lsp: {GREEN}{}{NC}) {error_tool}\n",
+                self.name,
+            );
         }
-        print!("\n");
         std::io::stdout().flush()?;
         Ok(())
     }

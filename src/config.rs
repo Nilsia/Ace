@@ -253,7 +253,7 @@ impl Config {
 
             // Check if dependencies are satisfied
             let dependencies = self.get_dependencies(args)?;
-            dependencies.validate(self)?;
+            dependencies.validate(self, args)?;
 
             for (_, tool) in dependencies.satisfied_tools {
                 tool.validate()?;
@@ -474,15 +474,21 @@ impl Config {
             found_bin
         );
 
+        if !args.verbose {
+            print!("Tools : \n");
+        }
         if let Some(tools) = self.tools.as_ref() {
             for (tool_key, tool) in tools {
-                tool.list(&dependencies, tool_key)?;
+                tool.list(&dependencies, tool_key, args)?;
             }
         }
 
+        if !args.verbose {
+            print!("\nGroups : \n");
+        }
         if let Some(groups) = self.groups.as_ref() {
             for (group_key, group) in groups {
-                group.list(&dependencies, group_key, self.tools.as_ref())?;
+                group.list(&dependencies, group_key, self.tools.as_ref(), args)?;
             }
         }
 
@@ -490,7 +496,7 @@ impl Config {
             print!("\nDefault groups : ");
             for group in d_groups {
                 print!(
-                    "\n\t - {group} {}",
+                    "\n - {group} {}",
                     dependencies
                         .unsatisfied_groups
                         .get(group)
@@ -511,6 +517,9 @@ impl Config {
             }
         }
         print!("\n");
+        if !args.verbose {
+            print!("\nSee with -v (verbose mode) for more details\n");
+        }
         std::io::stdout().flush()?;
         Ok(())
     }

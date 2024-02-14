@@ -1,6 +1,10 @@
-use crate::utils::{NC, RED, YELLOW};
+use crate::{
+    args::Args,
+    utils::{NC, RED, YELLOW},
+};
 use anyhow::{anyhow, Result};
 use std::{collections::HashMap, fmt::Display, io::Write, path::PathBuf};
+use toml::toml;
 
 use crate::{config::Config, group::Group, tool::Tool};
 #[derive(Debug, Clone)]
@@ -53,20 +57,22 @@ pub struct Dependencies<'l> {
 }
 
 impl<'l> Dependencies<'l> {
-    pub fn validate(&self, config: &Config) -> Result<()> {
+    pub fn validate(&self, config: &Config, args: &Args) -> Result<()> {
         if !self.unsatisfied_tools.is_empty() || !self.unsatisfied_groups.is_empty() {
-            self.print_unsatisfied_dependencies(config)?;
+            self.print_unsatisfied_dependencies(config, args)?;
             return Err(anyhow!(" because of previous explanation"));
         }
         Ok(())
     }
-    fn print_unsatisfied_dependencies(&self, config: &Config) -> Result<()> {
+    fn print_unsatisfied_dependencies(&self, config: &Config, args: &Args) -> Result<()> {
         print!("\nThe following tools and groups are not valid :\n\n");
         for (tool_key, tool) in &self.unsatisfied_tools {
-            tool.tool.list(self, tool_key)?;
+            tool.tool.list(self, tool_key, args)?;
         }
         for (group_key, group) in &self.unsatisfied_groups {
-            group.group.list(self, &group_key, config.tools.as_ref())?;
+            group
+                .group
+                .list(self, &group_key, config.tools.as_ref(), args)?;
         }
         std::io::stdout().flush()?;
         Ok(())

@@ -36,12 +36,10 @@ pub struct Args {
     #[arg(short, long, default_value_t = false)]
     pub force: bool,
 
-    /// show version
-    // #[arg(short, long, default_value_t = false)]
+    /// Verbose mode
+    #[arg(short, long, default_value_t = false)]
+    pub verbose: bool,
 
-    // Verbose mode - not used at all
-    // #[arg(short, long, default_value_t = false)]
-    // pub verbose: bool,
     /// Only make modifications on the editor
     #[arg(long, default_value_t = false)]
     pub only_editor: bool,
