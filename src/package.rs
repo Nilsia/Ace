@@ -9,6 +9,18 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 
+#[derive(Debug)]
+pub enum PackageResult {
+    Canceled,
+    Removed,
+    Ignored,
+    Installed,
+    Linked,
+}
+
+/// (bin, config)
+pub type PackageInfo = (PackageResult, PackageResult);
+
 pub trait Package {
     fn name(&self) -> &String;
 
@@ -36,12 +48,11 @@ pub trait Package {
             .map(|name| get_config_dir().join(name))
     }
 
-    fn install(&self, args: &Args) -> Result<()> {
-        self.install_bin(args)?;
-        self.install_config(args)
+    fn install(&self, args: &Args) -> Result<PackageInfo> {
+        Ok((self.install_bin(args)?, self.install_config(args)?))
     }
 
-    fn install_bin(&self, args: &Args) -> Result<()> {
+    fn install_bin(&self, args: &Args) -> Result<PackageResult> {
         if args.symbolic || self.lib().is_none() {
             self.install_files(self.bin(), &self.get_bin_path(), args)
         } else {
@@ -58,20 +69,19 @@ pub trait Package {
         }
     }
 
-    fn install_config(&self, args: &Args) -> Result<()> {
+    fn install_config(&self, args: &Args) -> Result<PackageResult> {
         if let (Some(config), Some(path)) = (self.config(), &self.get_config_path()) {
             self.install_files(config, path, args)
         } else {
-            Ok(())
+            Ok(PackageResult::Ignored)
         }
     }
 
-    fn remove(&self, args: &Args) -> Result<()> {
-        self.remove_bin(args)?;
-        self.remove_config(args)
+    fn remove(&self, args: &Args) -> Result<PackageInfo> {
+        Ok((self.remove_bin(args)?, self.remove_config(args)?))
     }
 
-    fn remove_bin(&self, args: &Args) -> Result<()> {
+    fn remove_bin(&self, args: &Args) -> Result<PackageResult> {
         let path = self.get_bin_path();
         if args.force {
             if self.lib().is_some() {
@@ -86,7 +96,7 @@ pub trait Package {
         }
     }
 
-    fn remove_config(&self, args: &Args) -> Result<()> {
+    fn remove_config(&self, args: &Args) -> Result<PackageResult> {
         if let Some(config) = self.get_config_path() {
             if args.force {
                 self.remove_files_unchecked(config)
@@ -94,16 +104,22 @@ pub trait Package {
                 self.remove_files(config)
             }
         } else {
-            Ok(())
+            Ok(PackageResult::Ignored)
         }
     }
 
-    fn install_files_unchecked<P: AsRef<Path>>(&self, from: P, to: P, args: &Args) -> Result<()> {
+    fn install_files_unchecked<P: AsRef<Path>>(
+        &self,
+        from: P,
+        to: P,
+        args: &Args,
+    ) -> Result<PackageResult> {
         let f_display = from.as_ref().display();
         let t_display = to.as_ref().display();
         if args.symbolic {
             std::os::unix::fs::symlink(make_absolute(&from)?, &to)?;
             println!("{BLUE}LINKED{NC}: {t_display} {BLUE}->{NC} {f_display}");
+            Ok(PackageResult::Linked)
         } else {
             print!("{SAVE}INSTALLING: {f_display} -> {t_display}");
             io::stdout().flush()?;
@@ -115,11 +131,11 @@ pub trait Package {
             }
 
             println!("{RESTORE}{GREEN}INSTALLED{NC}: {f_display} -> {t_display}");
+            Ok(PackageResult::Installed)
         }
-        Ok(())
     }
 
-    fn install_files<P: AsRef<Path>>(&self, from: P, to: P, args: &Args) -> Result<()> {
+    fn install_files<P: AsRef<Path>>(&self, from: P, to: P, args: &Args) -> Result<PackageResult> {
         if args.force {
             self.remove_files_unchecked(&to)?;
             self.install_files_unchecked(&from, &to, args)
@@ -137,7 +153,7 @@ pub trait Package {
                         self.remove_files_unchecked(&to)?;
                         self.install_files_unchecked(from, to, args)
                     }
-                    _ => Ok(()),
+                    _ => Ok(PackageResult::Canceled),
                 }
             } else {
                 self.install_files_unchecked(from, to, args)
@@ -145,27 +161,27 @@ pub trait Package {
         }
     }
 
-    fn remove_files<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+    fn remove_files<P: AsRef<Path>>(&self, path: P) -> Result<PackageResult> {
         let path = path.as_ref();
         if path.exists() || path.is_symlink() {
             let display = path.display();
             match prompt(&format!(
                 "{SAVE}{YELLOW}WARNING{NC}: Do you want to remove '{display}' (Y/n): "
             ))?
-            .as_str()
+            .trim()
             {
                 "n" => {
                     println!("{YELLOW}WARNING{NC}: Canceled '{display}' deletion");
-                    Ok(())
+                    Ok(PackageResult::Canceled)
                 }
                 _ => self.remove_files_unchecked(path),
             }
         } else {
-            Ok(())
+            Ok(PackageResult::Ignored)
         }
     }
 
-    fn remove_files_unchecked<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+    fn remove_files_unchecked<P: AsRef<Path>>(&self, path: P) -> Result<PackageResult> {
         if path.as_ref().exists() || path.as_ref().is_symlink() {
             let display = path.as_ref().display();
             print!("{SAVE}{RED}DELETING{NC}: {display}");
@@ -178,8 +194,9 @@ pub trait Package {
             }
 
             println!("{RESTORE}{RED}DELETED{NC}: {display}");
+            return Ok(PackageResult::Removed);
         }
-        Ok(())
+        Ok(PackageResult::Ignored)
     }
 
     fn validate(&self) -> Result<()> {

@@ -6,6 +6,7 @@ pub const SAVE: &str = "\x1b[s";
 pub const RESTORE: &str = "\x1b[2K\x1b[u";
 
 pub const RED: &str = "\x1b[0;31m";
+pub const CYAN: &str = "\x1b[0;36m";
 pub const GREEN: &str = "\x1b[0;32m";
 pub const YELLOW: &str = "\x1b[0;33m";
 pub const BLUE: &str = "\x1b[0;34m";
@@ -129,4 +130,11 @@ pub fn prompt(message: &str) -> Result<String> {
     std::io::stdout().flush()?;
     std::io::stdin().read_line(&mut choice)?;
     Ok(choice)
+}
+pub fn existence(path: &PathBuf) -> Result<String> {
+    if path.try_exists()? {
+        Ok(String::new())
+    } else {
+        Ok(format!("({RED}NOT FOUND{NC})"))
+    }
 }
